@@ -7,6 +7,42 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import jp_mpl as jplot
+from copy import deepcopy
+
+def getSimplePeakTimes(n = [],
+                       ybins = [],
+                       expected_tdelay = 76.,
+                       refl_peak_width = 5.,
+                       plot= False,
+                       debug = False):
+    # ycenters
+    ycenters = (ybins[1:] + ybins[:-1])/2.
+    
+    # bin width
+    bin_width = ybins[1]-ybins[0]
+    
+    # Find the highest peak
+    prompt_peak_index = n.argmax()
+    
+    t1 = ybins[prompt_peak_index]
+    
+    # Now find the latest peak 
+    refl_min_index = prompt_peak_index + int(expected_tdelay/bin_width) - int(refl_peak_width/bin_width)
+
+    if refl_min_index >= n.size:
+        t2 = -1
+    else:
+        refl_peak_index = refl_min_index + n[refl_min_index:].argmax()
+
+        if n[refl_peak_index] < 1:
+            t2 = -1
+        else:
+            t2 = ybins[refl_peak_index]
+
+    terr1 = terr2 = 1.
+    
+    return t1, terr1, t2, terr2
+    
 
 def getPeakTimes(n = [],
                  ybins = [],
@@ -74,6 +110,9 @@ def getDPeakTimes(n = [],
                      plot= False,
                      debug = False):
 
+    if n.sum() == 0:
+        return -1, -1, -1, -1
+    
     # ycenters
     ycenters = (ybins[1:] + ybins[:-1])/2.
 
@@ -98,14 +137,20 @@ def getDPeakTimes(n = [],
     prompt_minus = int(10./bin_width)
     prompt_region = [n.argmax()-prompt_minus, n.argmax()]
 
-    prompt_peak_index = prompt_region[0]+dnsmooth[prompt_region[0]:prompt_region[1]].argmax()
+    try:
+        prompt_peak_index = prompt_region[0]+dnsmooth[prompt_region[0]:prompt_region[1]].argmax()
+    except:
+        # Errors appear here when the histogram is too empty
+        # print 'Not using this PMT'
+        return -2, -2, -2, -2
+    
     t1 = ydn[prompt_peak_index]
     refl_peak_index = prompt_peak_index + int(expected_tdelay/bin_width)
     refl_si = refl_peak_index - int(refl_peak_width/bin_width)
     refl_ei = refl_peak_index + int((refl_peak_width*2)/bin_width)
     refl_ei = np.min([refl_ei, ybins.size-1])
 
-    print refl_si, refl_ei
+    #print refl_si, refl_ei
 
     # Finding the peaks
     dpeaks = detect_peaks(dnsmooth[refl_si:refl_ei], 
@@ -202,7 +247,8 @@ def getGausTimes(n = [],
             perr2 = np.sqrt(np.diag(pcov2))
             terr2 = perr2[1]
             t2 = popt2[1]
-        except RuntimeError: 
+        except:
+            # There are errors here when the ToA histogram is empty
             terr2 = -1
             t2 = -1
     
@@ -253,7 +299,7 @@ class FitLBpos(object):
         #self.water_c = c/water_n
         self.print_call = print_call
         
-        self.pmtbool[self.data == 0] = False
+        self.pmtbool[self.data <= 0] = False
         
         if error == None:
             self.error = np.ones_like(data)
