@@ -10,7 +10,9 @@ def energyToWlen(energy):
 def getMChits(filename):
     ratreader = rat.dsreader(filename)
     data = []
+    counter = 0
     for ds, run in ratreader:
+        counter += 1
         for imc in range(0, ds.GetMCEVCount()):
             data.append(ds.GetMCEV(imc).GetMCHits().GetAllCount())
     data = np.array(data)

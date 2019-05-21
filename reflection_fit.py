@@ -4,7 +4,7 @@ import jp_analysis as analysis
 from detect_peaks import detect_peaks
 
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import jp_mpl as jplot
 from copy import deepcopy
@@ -192,18 +192,20 @@ def getDPeakTimes(n = [],
 
 
 def getGausTimes(n = [],
-                    ybins = [],
-                    expected_tdelay = 76.,
-                    prompt_peak_width = 4.,
-                    refl_peak_width = 6.,
-                    plot = False,
-                    debug = False):
+                 ybins = [],
+                 expected_tdelay = 76.,
+                 prompt_peak_width = 4.,
+                 refl_peak_width = 4.5,
+                 second_gaus = True,
+                 plot = False,
+                 debug = False):
     
     # ycenters
     ycenters = (ybins[1:] + ybins[:-1])/2.
     
     # bin width
     bin_width = ybins[1]-ybins[0]
+
     
     # Find the highest peak
     prompt_peak_index = n.argmax()
@@ -215,12 +217,14 @@ def getGausTimes(n = [],
     
     # Fit a gaussian +/- prompt_peak_width ns around the peak
     popt =  [n[prompt_peak_index]/2., ycenters[prompt_peak_index],3.]
+
+    
     try:
         popt, pcov = optimize.curve_fit(analysis.gaus,
                                         ycenters[fit_s:fit_e+1],
                                         n[fit_s:fit_e+1],
                                         popt,
-                                       )
+                                        )
         perr = np.sqrt(np.diag(pcov))
         terr1 = perr[1]
         t1 = popt[1]
@@ -231,42 +235,57 @@ def getGausTimes(n = [],
     # Fit a gaussian around the second peak, expected_tdelay-refl_peak_width+2*refl_peak_width
     refl_peak_index = prompt_peak_index + int(expected_tdelay/bin_width)
     fit_s2 = refl_peak_index - int(refl_peak_width/bin_width)
-    fit_e2 = refl_peak_index + int((refl_peak_width*2)/bin_width)
+    fit_e2 = refl_peak_index + int((refl_peak_width)/bin_width)
     fit_e2 = np.min([fit_e2, ybins.size-1])
     
     if refl_peak_index > (ybins.size-1):
         terr2 = -1
         t2 = -1
-    else:   
-        try:
-            popt2 = [n[refl_peak_index]/2.,ycenters[refl_peak_index],3.]
-            popt2, pcov2 = optimize.curve_fit(analysis.gaus,
-                                              ycenters[fit_s2:fit_e2+1],
-                                              n[fit_s2:fit_e2+1],
-                                              popt2)   
-            perr2 = np.sqrt(np.diag(pcov2))
-            terr2 = perr2[1]
-            t2 = popt2[1]
-        except:
-            # There are errors here when the ToA histogram is empty
+    else:
+        if second_gaus:        
+            try:
+                popt2 = [n[refl_peak_index]/2.,ycenters[refl_peak_index],3.]
+                popt2, pcov2 = optimize.curve_fit(analysis.gaus,
+                                                  ycenters[fit_s2:fit_e2+1],
+                                                  n[fit_s2:fit_e2+1],
+                                                  popt2)
+                perr2 = np.sqrt(np.diag(pcov2))
+                terr2 = perr2[1]
+                t2 = popt2[1]
+            except:
+                # There are errors here when the ToA histogram is empty
+                terr2 = -1
+                t2 = -1
+        else:
+            t2 = ycenters[fit_s2 + n[fit_s2:].argmax()]
             terr2 = -1
-            t2 = -1
-    
-
     if plot:
+
+        print 'Times', t1, terr1, t2, terr2
         fig = plt.figure(figsize=(7,4))
         ax1 = fig.add_subplot(111)
         jplot.unfilledBar(ybins, n, color='0.7')
 
-        newx = np.linspace(ycenters[fit_s]-3., ycenters[fit_e]+3., 101)
+        newx = np.linspace(ycenters[fit_s],
+                           ycenters[fit_e], 101)
         plt.plot(newx, analysis.gaus(newx, *popt), 'r')
-        
-        try:
-            newx = np.linspace(ycenters[fit_s2]-3., ycenters[fit_e2]+3., 101)
-            plt.plot(newx, analysis.gaus(newx, *popt2), 'r')    
-            plt.xlim([ycenters[prompt_peak_index]-20., ycenters[refl_peak_index] + 20])
-        except:
-            print 'Could not plot second gaus (out of bounds)'
+        print t1+expected_tdelay
+        plt.axvline(x = t1 + expected_tdelay-refl_peak_width,
+                    ymin=0, ymax = n.max()*1.2,
+                    linestyle='--', color = 'k')
+        plt.axvline(x = t1 + expected_tdelay+refl_peak_width,
+                    ymin=0, ymax = n.max()*1.2,
+                    linestyle='--', color = 'k')
+        if second_gaus:
+            try:
+                newx = np.linspace(ycenters[fit_s2],
+                                   ycenters[fit_e2], 101)
+                plt.plot(newx, analysis.gaus(newx, *popt2), 'r')    
+                plt.xlim([ycenters[prompt_peak_index]-20., ycenters[refl_peak_index] + 20])
+            except:
+                print 'Could not plot second gaus (out of bounds)'
+        else:
+            plt.axvline(x = t2, ymin =0, ymax = n.max()*1.2)
         
         plt.yscale('log')
         plt.ylabel('N hits')

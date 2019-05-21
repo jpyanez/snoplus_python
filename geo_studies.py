@@ -118,7 +118,7 @@ def compareTracking(set_list = [], costheta_range = [-1, 1], outdir = '', pltlab
 
         values_list.append(values)
 
-    fig1 = plt.figure(figsize=(6,6))
+    fig1 = plt.figure(figsize=(7,7))
     ax1 = fig1.add_subplot(211)
     plt.title('cos(theta) = [' + "%.2f" % costheta_range[0] + ', '+"%.2f" % costheta_range[1] + ']')
     indices = np.arange(len(labels_ref)+1)
@@ -145,11 +145,12 @@ def compareTracking(set_list = [], costheta_range = [-1, 1], outdir = '', pltlab
         jplot.errorMarkVert(indices*1., ratio, yerror=error, color=color_list[i])
         print ratio
     plt.xticks(indices + 0.5, labels_ref)
-    plt.ylim([0.65, 1.35])
+    plt.ylim([0.9, 1.1])
+    #plt.ylim([0.65, 1.35])
     plt.xlim([0, indices[-1]])
     plt.subplots_adjust(hspace=0)
 
-    fig3 = plt.figure(figsize=(6,6))
+    fig3 = plt.figure(figsize=(7,7))
     ax3 = fig3.add_subplot(211)
 
     plt.title('cos(theta) = [' + "%.2f" % costheta_range[0] + ', '+"%.2f" % costheta_range[1] + ']')
@@ -177,8 +178,8 @@ def compareTracking(set_list = [], costheta_range = [-1, 1], outdir = '', pltlab
         jplot.unfilledBar(myx, ratio,  color=color_list[i-1])
         jplot.errorMarkVert(myx, ratio, yerror=error, color=color_list[i-1])
         print ratio
-    #plt.ylim([0.8, 1.2])
-    plt.ylim([0.65, 1.35])
+    plt.ylim([0.9, 1.1])
+    #plt.ylim([0.65, 1.35])
     plt.subplots_adjust(hspace=0)
 
     if len(outdir) > 0:

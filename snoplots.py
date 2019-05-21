@@ -8,7 +8,7 @@ mycolors = ['b','r','g','m','c', 'y', '0.6']
 
 def plotComparison(data=None, datasets = [], datakey = '', scale_factor = [], 
                    labels = [], figname = '', xaxis = np.arange(0, 100, 2),
-                   xlabel = 'Nhits', ylabel = 'Entries', 
+                   xlabel = 'Nhits', ylabel = 'Entries', minall = -1,
                    outdir = None, verbose=False):
 
     if len(scale_factor) == 0:
@@ -25,8 +25,11 @@ def plotComparison(data=None, datasets = [], datakey = '', scale_factor = [],
         myfig = plt.figure(figsize=(8,5))    
         
         if level=='all':
-            xaxis = np.arange(1.3*xaxis.max(), 2.3*xaxis.max(), xaxis[1]-xaxis[0])
-        
+            if minall < 0:
+                xaxis = np.arange(1.3*xaxis.max(), 2.3*xaxis.max(), xaxis[1]-xaxis[0])
+            else:
+                xaxis = np.arange(minall, 2.3*xaxis.max(), xaxis[1]-xaxis[0])
+                
         for i, one_set in enumerate(datasets):
             n, x = np.histogram(data[one_set][datakey][:,k], xaxis)
             nbins.append(n)

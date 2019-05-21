@@ -6,7 +6,7 @@ def readfile(infile_name):
     infile = open(infile_name)
 
     data = {}
-    skip_symbols = list('{}/*')
+    skip_symbols = list('{}/* \n')
     remove_symbols = [" ", '"', ","]
     brackets = ["[","]"]
 
@@ -18,7 +18,7 @@ def readfile(infile_name):
 
         # Not reading commented parts in the same line
         line_contents[1] = line_contents[1].split('/')[0]
-
+        
         if '"' in line_contents[1]:
             print 'String ', line_contents[0]
             data[line_contents[0]] = \
