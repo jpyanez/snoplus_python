@@ -6,13 +6,30 @@ def readfile(infile_name):
     infile = open(infile_name)
 
     data = {}
-    skip_symbols = list('{}/* \n')
+    skip_symbols = list('/* \n')
     remove_symbols = [" ", '"', ","]
     brackets = ["[","]"]
 
+    index = 0
+    
     for one_line in infile:
+
         if one_line[0] in skip_symbols:
             continue
+        
+        if '{' in one_line:
+            # Start a new index
+            data[index] = {}
+            continue
+
+        if '}' in one_line:
+            # Close the index
+            index += 1
+            continue
+            
+        #if one_line[0] in skip_symbols:
+        #    continue
+        
         one_line = one_line.replace(" ", "")
         line_contents = one_line.split(':')
 
@@ -20,20 +37,22 @@ def readfile(infile_name):
         line_contents[1] = line_contents[1].split('/')[0]
         
         if '"' in line_contents[1]:
-            print 'String ', line_contents[0]
-            data[line_contents[0]] = \
-                                     line_contents[1][:-1].translate(None, ''.join(remove_symbols))
+            print('String ', line_contents[0])
+            table = line_contents[1][:-1].maketrans(dict.fromkeys(''.join(remove_symbols)))
+            data[index][line_contents[0]] = line_contents[1][:-1].translate(table)
+                                            #line_contents[1][:-1].translate(None, ''.join(remove_symbols))
         elif ',' in line_contents[1][:-2]:
-            print 'Array ', line_contents[0]
+            print('Array ', line_contents[0])
 
             # This is an array of numbers
-            aux = line_contents[1].translate(None, ''.join(brackets))
+            table = line_contents[1].maketrans(dict.fromkeys(''.join(brackets)))
+            aux = line_contents[1].translate(table) #None, ''.join(brackets))
             aux = aux.replace(',,','')
-            data[line_contents[0]] = np.array(ast.literal_eval(aux[:-1]))
+            data[index][line_contents[0]] = np.array(ast.literal_eval(aux[:-1]))
         else:
-            print 'Number ', line_contents[0]
+            print('Number ', line_contents[0])
             # This is a simple number
-            data[line_contents[0]] = np.float(line_contents[1][:-2])    
+            data[index][line_contents[0]] = np.float(line_contents[1][:-2].rstrip(']').lstrip('['))    
 
     return data
 
@@ -54,9 +73,9 @@ def dbreader(infile_name):
 
         if '{' in line[0]:
             this_dict = {}
-            print 'reader: Creating a dict in line', i
+            print('reader: Creating a dict in line', i)
         elif '}' in line[0]:
-            print 'reader: Closing a dict in line', i
+            print('reader: Closing a dict in line', i)
             data[this_dict['index']] = deepcopy(this_dict)
         else:
             split_line = line.split(':')
