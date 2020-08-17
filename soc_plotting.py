@@ -1,23 +1,35 @@
 import os, sys, pickle
 
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+    import jp_mpl as jplot
+except:
+    print 'Not using matplotlib'
 import numpy as np
 import collections
 
 import jp_analysis as jp
-import jp_mpl as jplot
+
 
 try:
-    pmt_info = jp.jpickle('/home/jpyanez/snoplus/snoplus_python/pmt_positions.pckl')
+    pmt_info = pickle.load(open('/home/users/jpyanez/snoplus/snoplus_python/pmt_positions.pckl'))
 except:
     print('Pickle failed in py3, trying py2')
     try:
         pmt_info = pickle.load(open('/home/jpyanez/snoplus/snoplus_python/pmt_positions.pckl'))
     except:
         print('Pickle failed in py2 as well')
-            
-pmt_info['xyz_norm'] = pmt_info['xyz']/np.linalg.norm(pmt_info['xyz'],axis=1).reshape(pmt_info['xyz'].shape[0],1)
-pmt_info['r'] = np.linalg.norm(pmt_info['xyz'], axis=1)
+
+
+def mynorm(c,axis=-1):
+    if len(c.shape) > 1 and axis>=0:
+        return np.apply_along_axis(np.linalg.norm, axis, c)
+    else:
+        return np.linalg.norm(c)
+
+#print pmt_info['xyz'], mynorm(pmt_info['xyz'],axis=1)      
+pmt_info['xyz_norm'] = pmt_info['xyz']/mynorm(pmt_info['xyz'],axis=1).reshape(pmt_info['xyz'].shape[0],1)
+pmt_info['r'] = mynorm(pmt_info['xyz'], axis=1)
 pmtbool = pmt_info['type']==1
 psup_r = pmt_info['r'][pmtbool].mean()#/10.
 #pmt_info.keys()
@@ -51,8 +63,8 @@ def plotTOA( data = None,
 
     if av_reference:
         a = psup_r
-        b = np.linalg.norm(position)
-        c = np.linalg.norm(position-pmt_info['xyz'], axis=1)
+        b = mynorm(position)
+        c = mynorm(position-pmt_info['xyz'], axis=1)
         mod_ct = (a**2 + b**2 - c**2)/(2*a*b)
         mod_theta = np.rad2deg(np.arccos(mod_ct))
     else:
@@ -136,12 +148,12 @@ def plotTOA2D( data = None,
         # Theta wrt center of the av
         # Using law of cosines, a and b are psup_r
         #a = psup_r
-        #b = np.linalg.norm(position)
-        #c = np.linalg.norm(position-pmt_info['xyz'], axis=1)
+        #b = mynorm(position)
+        #c = mynorm(position-pmt_info['xyz'], axis=1)
         #mod_ct = (a**2 + b**2 - c**2)/(2*a*b)
         #mod_theta = np.rad2deg(np.arccos(mod_ct))
 
-        mod_ct = np.dot(position, pmt_info['xyz'].T)/(np.linalg.norm(position)*np.linalg.norm(pmt_info['xyz'],axis=1))
+        mod_ct = np.dot(position, pmt_info['xyz'].T)/(mynorm(position)*mynorm(pmt_info['xyz'],axis=1))
         mod_theta =  np.rad2deg(np.arccos(mod_ct))
         
     else:
@@ -151,7 +163,7 @@ def plotTOA2D( data = None,
         #mod_theta = np.rad2deg(np.arccos(mod_ct))
 
         pmtpos = pmt_info['xyz']-position
-        mod_ct = np.dot(position, pmtpos.T)/(np.linalg.norm(position)*np.linalg.norm(pmtpos,axis=1))
+        mod_ct = np.dot(position, pmtpos.T)/(mynorm(position)*mynorm(pmtpos,axis=1))
         mod_theta = np.rad2deg(np.arccos(mod_ct))
         
     norm_list = np.zeros(len(theta_edges)-1)

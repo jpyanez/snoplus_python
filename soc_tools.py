@@ -35,7 +35,7 @@ def getTOAhistogram_detailed(infile_list = [],
         #try:
         reader = rat.socreader(one_file)
         soc, run = reader.next()
-        print('manip position', np.array(soc.calib.GetPos()))
+        print('manip position', np.array(soc.GetCalib().GetPos()))
         toa = np.zeros_like(all_toa)
         
         for one_pmt in soc.GetSOCPMTIDs():
